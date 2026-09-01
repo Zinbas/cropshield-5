@@ -339,7 +339,7 @@ async function getOwnerScans(ownerId) {
 async function getOwnerCases(ownerId) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(cases).where(eq(cases.ownerId, ownerId)).orderBy(desc(cases.createdAt));
+  return db.select({ id: cases.id, ownerId: cases.ownerId, scanId: cases.scanId, reference: cases.reference, status: cases.status, notes: cases.notes, createdAt: cases.createdAt, updatedAt: cases.updatedAt, disease: scans.disease, riskLevel: scans.riskLevel, recommendationProgress: scans.recommendationProgress, recommendations: scans.recommendations }).from(cases).leftJoin(scans, eq(cases.scanId, scans.id)).where(eq(cases.ownerId, ownerId)).orderBy(desc(cases.createdAt));
 }
 async function getAdminOverview() {
   const db = await getDb();
@@ -361,7 +361,7 @@ async function getAdminOverview() {
 async function getApprovedCases() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(cases).orderBy(desc(cases.createdAt)).limit(100);
+  return db.select({ id: cases.id, ownerId: cases.ownerId, scanId: cases.scanId, reference: cases.reference, status: cases.status, notes: cases.notes, createdAt: cases.createdAt, updatedAt: cases.updatedAt, disease: scans.disease, riskLevel: scans.riskLevel, recommendationProgress: scans.recommendationProgress, recommendations: scans.recommendations }).from(cases).leftJoin(scans, eq(cases.scanId, scans.id)).where(eq(cases.status, "reviewing")).orderBy(desc(cases.createdAt));
 }
 async function getApprovedDirectory() {
   const db = await getDb();
