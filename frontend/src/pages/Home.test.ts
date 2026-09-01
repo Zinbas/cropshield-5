@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getExpertContactHref, getScanNextSteps, getSection, getUserInitials, LOCAL_SIGNUP_ROLES, validateCropImage } from "./Home";
+import { buildRecommendationProgress, formatFieldContext, formatGpsLabel, getExpertContactHref, getScanNextSteps, getSection, getUserInitials, LOCAL_SIGNUP_ROLES, parseRecommendationProgress, validateCropImage } from "./Home";
 
 describe("CropShield workspace section routing", () => {
   it("recognizes scan as a primary action route even though it is not persistent navigation", () => {
@@ -44,6 +44,33 @@ describe("CropShield workspace section routing", () => {
     expect(validateCropImage({ type: "image/jpeg", size: 1024 })).toBeNull();
     expect(validateCropImage({ type: "image/gif", size: 1024 })).toContain("JPEG");
     expect(validateCropImage({ type: "image/png", size: 13 * 1024 * 1024 })).toContain("12 MB");
+  });
+
+  it("builds recommendation progress as pending steps", () => {
+    expect(buildRecommendationProgress(["Inspect the leaves", "Improve airflow"])).toEqual([
+      { step: "Inspect the leaves", completed: false },
+      { step: "Improve airflow", completed: false },
+    ]);
+  });
+
+  it("formats only the field context supplied by the farmer", () => {
+    expect(formatFieldContext({ soilType: "Sandy loam", soilPh: 6.4, cropCount: 120, landArea: 2.5, landUnit: "acres" })).toEqual([
+      "Soil: Sandy loam",
+      "pH 6.4",
+      "120 crops/plants",
+      "2.5 acres",
+    ]);
+    expect(formatFieldContext()).toEqual([]);
+  });
+
+  it("formats captured GPS coordinates and handles missing location", () => {
+    expect(formatGpsLabel(19.9876543, 73.7812349)).toBe("19.987654, 73.781235");
+    expect(formatGpsLabel()).toBe("No GPS coordinates captured");
+  });
+
+  it("restores only valid persisted recommendation progress entries", () => {
+    expect(parseRecommendationProgress(JSON.stringify([{ step: "Inspect the leaves", completed: true }, { step: "", completed: "no" }, null]))).toEqual([{ step: "Inspect the leaves", completed: true }]);
+    expect(parseRecommendationProgress("not-json")).toEqual([]);
   });
 
   it("builds safe contact actions for verified experts", () => {

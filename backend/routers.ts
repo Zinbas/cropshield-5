@@ -22,6 +22,16 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next();
 });
 
+const fieldContextSchema = z.object({
+  soilType: z.string().trim().max(120).optional(),
+  soilPh: z.number().min(0).max(14).optional(),
+  soilMoisture: z.enum(["dry", "balanced", "wet"]).optional(),
+  cropCount: z.number().int().min(1).max(1_000_000).optional(),
+  landArea: z.number().positive().max(1_000_000).optional(),
+  landUnit: z.enum(["acres", "hectares"]).optional(),
+  fieldNotes: z.string().trim().max(1000).optional(),
+}).optional();
+
 const analysisSchema = {
   type: "object",
   properties: {
@@ -41,12 +51,12 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
-    signup: publicProcedure.input(z.object({ name: z.string().trim().min(2).max(160), email: z.string().trim().toLowerCase().email().max(320), password: z.string().min(8).max(128), role: z.enum(["user", "admin"]), phone: z.string().trim().max(40).optional(), region: z.string().trim().max(160).optional(), state: z.string().trim().max(100).optional(), district: z.string().trim().max(100).optional(), pinCode: z.string().trim().max(12).optional(), village: z.string().trim().max(160).optional(), primaryCrop: z.string().trim().min(2).max(120).optional(), farmingExperienceYears: z.number().int().min(0).max(100).optional() })).mutation(async ({ ctx, input }) => {
+    signup: publicProcedure.input(z.object({ name: z.string().trim().min(2).max(160), email: z.string().trim().toLowerCase().email().max(320), password: z.string().min(8).max(128), role: z.enum(["user", "admin"]), phone: z.string().trim().max(40).optional(), region: z.string().trim().max(160).optional(), state: z.string().trim().max(100).optional(), district: z.string().trim().max(100).optional(), pinCode: z.string().trim().max(12).optional(), village: z.string().trim().max(160).optional(), primaryCrop: z.string().trim().min(2).max(120).optional(), farmingExperienceYears: z.number().int().min(0).max(100).optional(), latitude: z.number().min(-90).max(90).optional(), longitude: z.number().min(-180).max(180).optional() })).mutation(async ({ ctx, input }) => {
       const email = normalizeLocalEmail(input.email);
       if (await getUserByEmail(email)) throw new Error("An account with this email already exists");
       if (input.role === "admin" && !canCreateLocalAdmin(email, await countAdmins())) throw new Error("Administrator signup is reserved for the configured owner account and only one account is allowed");
       const user = await createLocalUser({ name: input.name.trim(), email, passwordHash: await hashPassword(input.password), role: input.role });
-      await updateProfile(user.id, { displayName: input.name.trim(), phone: input.phone, region: input.region, state: input.state, district: input.district, pinCode: input.pinCode, village: input.village, primaryCrop: input.primaryCrop, farmingExperienceYears: input.farmingExperienceYears });
+      await updateProfile(user.id, { displayName: input.name.trim(), phone: input.phone, region: input.region, state: input.state, district: input.district, pinCode: input.pinCode, village: input.village, primaryCrop: input.primaryCrop, farmingExperienceYears: input.farmingExperienceYears, latitude: input.latitude, longitude: input.longitude });
       const token = await createLocalSession(user.openId);
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.cookie(LOCAL_SESSION_COOKIE, token, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
@@ -77,7 +87,7 @@ export const appRouter = router({
     createCrop: protectedProcedure.input(z.object({ name: z.string().min(2).max(120), cropType: z.string().min(2).max(80), region: z.string().max(160).optional() })).mutation(({ ctx, input }) => createCrop({ ownerId: ctx.user.id, ...input })),
     cases: protectedProcedure.query(({ ctx }) => getOwnerCases(ctx.user.id)),
     updateProfile: protectedProcedure.input(z.object({ displayName: z.string().min(2).max(160), region: z.string().max(160).optional(), phone: z.string().max(40).optional(), state: z.string().max(100).optional(), district: z.string().max(100).optional(), pinCode: z.string().max(12).optional(), village: z.string().max(160).optional(), primaryCrop: z.string().min(2).max(120).optional(), farmingExperienceYears: z.number().int().min(0).max(100).optional(), latitude: z.number().min(-90).max(90).optional(), longitude: z.number().min(-180).max(180).optional() })).mutation(({ ctx, input }) => updateProfile(ctx.user.id, input)),
-    analyzeScan: protectedProcedure.input(z.object({ imageBase64: z.string().min(32).max(12_000_000), mimeType: z.string().regex(/^image\/(jpeg|png|webp)$/), cropId: z.number().int().positive().optional(), fileName: z.string().min(1).max(180) })).mutation(async ({ ctx, input }) => {
+    analyzeScan: protectedProcedure.input(z.object({ imageBase64: z.string().min(32).max(12_000_000), mimeType: z.string().regex(/^image\/(jpeg|png|webp)$/), cropId: z.number().int().positive().optional(), fileName: z.string().min(1).max(180), fieldContext: fieldContextSchema })).mutation(async ({ ctx, input }) => {
       const key = `farmer-${ctx.user.id}/scans/${Date.now()}-${input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
       const buffer = Buffer.from(input.imageBase64.replace(/^data:[^;]+;base64,/, ""), "base64");
       let stored: { key: string; url: string } | undefined;
@@ -86,15 +96,23 @@ export const appRouter = router({
       // Start persistence when available, but never let storage/database failure prevent the AI request.
       try {
         stored = await storagePut(key, buffer, input.mimeType);
-        scanId = await insertScan({ ownerId: ctx.user.id, cropId: input.cropId, imageKey: stored.key, imageUrl: stored.url, status: "analyzing", riskLevel: "unknown" });
+        scanId = await insertScan({ ownerId: ctx.user.id, cropId: input.cropId, imageKey: stored.key, imageUrl: stored.url, status: "analyzing", riskLevel: "unknown", soilType: input.fieldContext?.soilType, soilPh: input.fieldContext?.soilPh?.toString(), soilMoisture: input.fieldContext?.soilMoisture, cropCount: input.fieldContext?.cropCount, landArea: input.fieldContext?.landArea?.toString(), landUnit: input.fieldContext?.landUnit, fieldNotes: input.fieldContext?.fieldNotes, recommendationProgress: JSON.stringify([]) });
       } catch (persistenceError) {
         console.error("[Scan] Storage/database unavailable before AI analysis; continuing with AI:", persistenceError);
       }
 
       try {
+        const contextSummary = [
+          input.fieldContext?.soilType && `Soil type: ${input.fieldContext.soilType}`,
+          input.fieldContext?.soilPh !== undefined && `Soil pH: ${input.fieldContext.soilPh}`,
+          input.fieldContext?.soilMoisture && `Soil moisture: ${input.fieldContext.soilMoisture}`,
+          input.fieldContext?.cropCount !== undefined && `Number of crops/plants represented: ${input.fieldContext.cropCount}`,
+          input.fieldContext?.landArea !== undefined && `Land area: ${input.fieldContext.landArea} ${input.fieldContext.landUnit ?? "units"}`,
+          input.fieldContext?.fieldNotes && `Farmer notes: ${input.fieldContext.fieldNotes}`,
+        ].filter(Boolean).join("\n") || "No optional field context was supplied. Base the result on the image only.";
         const messages = [
-          { role: "system" as const, content: "You are CropShield's crop-health assessment service. Analyze the actual crop image conservatively. Do not claim certainty; return only the requested structured JSON." },
-          { role: "user" as const, content: [{ type: "text" as const, text: "Assess this crop image for visible health concerns. Identify likely crop type, risk level, confidence from 0 to 100, visible symptoms, concise assessment, and practical recommendations." }, { type: "image_url" as const, image_url: { url: `data:${input.mimeType};base64,${input.imageBase64.replace(/^data:[^;]+;base64,/, "")}` } }] },
+          { role: "system" as const, content: "You are CropShield's crop-health assessment service. Analyze the actual crop image conservatively. Do not claim certainty; return only the requested structured JSON. Use farmer-supplied field context as supporting evidence, explain when image evidence is limited, and make recommendations practical, safe, and specific to the crop and context." },
+          { role: "user" as const, content: [{ type: "text" as const, text: `Assess this crop image for visible health concerns. Identify likely crop type, risk level, confidence from 0 to 100, visible symptoms, concise assessment, and practical recommendations. Return treatment, prevention, and monitoring actions where appropriate.\n\nOptional farmer field context (may be incomplete):\n${contextSummary}` }, { type: "image_url" as const, image_url: { url: `data:${input.mimeType};base64,${input.imageBase64.replace(/^data:[^;]+;base64,/, "")}` } }] },
         ];
         let response;
         try {
@@ -121,7 +139,7 @@ export const appRouter = router({
         if (!Number.isFinite(confidence) || confidence < 0 || confidence > 100 || typeof parsed.disease !== "string" || typeof parsed.assessment !== "string" || !Array.isArray(parsed.symptoms) || !Array.isArray(parsed.recommendations)) throw new Error("The crop assessment response was not valid structured data");
 
         if (scanId) {
-          await updateScan(scanId, ctx.user.id, { status: "complete", riskLevel, confidence: confidence.toFixed(2), disease: parsed.disease, symptoms: JSON.stringify(parsed.symptoms), assessment: parsed.assessment, recommendations: JSON.stringify(parsed.recommendations) });
+          await updateScan(scanId, ctx.user.id, { status: "complete", riskLevel, confidence: confidence.toFixed(2), disease: parsed.disease, symptoms: JSON.stringify(parsed.symptoms), assessment: parsed.assessment, recommendations: JSON.stringify(parsed.recommendations), recommendationProgress: JSON.stringify(parsed.recommendations.map((step: string) => ({ step, completed: false }))) });
         } else {
           console.warn("[Scan] AI succeeded, but no persistent scan record was created.");
         }
@@ -130,7 +148,7 @@ export const appRouter = router({
           try { await notifyOwner({ title: "High-risk CropShield scan", content: `A new high-risk crop scan was analyzed for farmer ${ctx.user.name ?? ctx.user.id}. Review the approved workflow before system-wide publication.` }); }
           catch (notificationError) { console.warn("[Scan] Notification failed after successful analysis:", notificationError); }
         }
-        return { scanId: scanId ?? 0, imageUrl: stored?.url ?? "", ...parsed };
+        return { scanId: scanId ?? 0, imageUrl: stored?.url ?? "", fieldContext: input.fieldContext ?? null, recommendationProgress: parsed.recommendations.map((step: string) => ({ step, completed: false })), ...parsed };
       } catch (error) {
         if (scanId) {
           try { await updateScan(scanId, ctx.user.id, { status: "failed" }); }
@@ -139,6 +157,10 @@ export const appRouter = router({
         console.error("[Scan] analyzeScan failed:", error);
         throw error;
       }
+    }),
+    updateRecommendationProgress: protectedProcedure.input(z.object({ scanId: z.number().int().positive(), progress: z.array(z.object({ step: z.string().trim().min(1).max(600), completed: z.boolean() })).max(30) })).mutation(async ({ ctx, input }) => {
+      await updateScan(input.scanId, ctx.user.id, { recommendationProgress: JSON.stringify(input.progress) });
+      return { success: true } as const;
     }),
   }),
   weather: router({

@@ -87,6 +87,14 @@ var scans = mysqlTable("scans", {
   riskLevel: mysqlEnum("riskLevel", ["low", "medium", "high", "critical", "unknown"]).default("unknown").notNull(),
   confidence: decimal("confidence", { precision: 5, scale: 2 }),
   disease: varchar("disease", { length: 180 }),
+  soilType: varchar("soilType", { length: 120 }),
+  soilPh: decimal("soilPh", { precision: 4, scale: 2 }),
+  soilMoisture: varchar("soilMoisture", { length: 80 }),
+  cropCount: int("cropCount"),
+  landArea: decimal("landArea", { precision: 10, scale: 2 }),
+  landUnit: varchar("landUnit", { length: 24 }),
+  fieldNotes: text("fieldNotes"),
+  recommendationProgress: text("recommendationProgress"),
   symptoms: text("symptoms"),
   assessment: text("assessment"),
   recommendations: text("recommendations"),
@@ -1102,6 +1110,15 @@ var adminProcedure2 = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") throw new Error("Administrator access required");
   return next();
 });
+var fieldContextSchema = z2.object({
+  soilType: z2.string().trim().max(120).optional(),
+  soilPh: z2.number().min(0).max(14).optional(),
+  soilMoisture: z2.enum(["dry", "balanced", "wet"]).optional(),
+  cropCount: z2.number().int().min(1).max(1e6).optional(),
+  landArea: z2.number().positive().max(1e6).optional(),
+  landUnit: z2.enum(["acres", "hectares"]).optional(),
+  fieldNotes: z2.string().trim().max(1e3).optional()
+}).optional();
 var analysisSchema = {
   type: "object",
   properties: {
@@ -1120,12 +1137,12 @@ var appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
-    signup: publicProcedure.input(z2.object({ name: z2.string().trim().min(2).max(160), email: z2.string().trim().toLowerCase().email().max(320), password: z2.string().min(8).max(128), role: z2.enum(["user", "admin"]), phone: z2.string().trim().max(40).optional(), region: z2.string().trim().max(160).optional(), state: z2.string().trim().max(100).optional(), district: z2.string().trim().max(100).optional(), pinCode: z2.string().trim().max(12).optional(), village: z2.string().trim().max(160).optional(), primaryCrop: z2.string().trim().min(2).max(120).optional(), farmingExperienceYears: z2.number().int().min(0).max(100).optional() })).mutation(async ({ ctx, input }) => {
+    signup: publicProcedure.input(z2.object({ name: z2.string().trim().min(2).max(160), email: z2.string().trim().toLowerCase().email().max(320), password: z2.string().min(8).max(128), role: z2.enum(["user", "admin"]), phone: z2.string().trim().max(40).optional(), region: z2.string().trim().max(160).optional(), state: z2.string().trim().max(100).optional(), district: z2.string().trim().max(100).optional(), pinCode: z2.string().trim().max(12).optional(), village: z2.string().trim().max(160).optional(), primaryCrop: z2.string().trim().min(2).max(120).optional(), farmingExperienceYears: z2.number().int().min(0).max(100).optional(), latitude: z2.number().min(-90).max(90).optional(), longitude: z2.number().min(-180).max(180).optional() })).mutation(async ({ ctx, input }) => {
       const email = normalizeLocalEmail(input.email);
       if (await getUserByEmail(email)) throw new Error("An account with this email already exists");
       if (input.role === "admin" && !canCreateLocalAdmin(email, await countAdmins())) throw new Error("Administrator signup is reserved for the configured owner account and only one account is allowed");
       const user = await createLocalUser({ name: input.name.trim(), email, passwordHash: await hashPassword(input.password), role: input.role });
-      await updateProfile(user.id, { displayName: input.name.trim(), phone: input.phone, region: input.region, state: input.state, district: input.district, pinCode: input.pinCode, village: input.village, primaryCrop: input.primaryCrop, farmingExperienceYears: input.farmingExperienceYears });
+      await updateProfile(user.id, { displayName: input.name.trim(), phone: input.phone, region: input.region, state: input.state, district: input.district, pinCode: input.pinCode, village: input.village, primaryCrop: input.primaryCrop, farmingExperienceYears: input.farmingExperienceYears, latitude: input.latitude, longitude: input.longitude });
       const token = await createLocalSession(user.openId);
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.cookie(LOCAL_SESSION_COOKIE, token, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1e3 });
@@ -1156,21 +1173,32 @@ var appRouter = router({
     createCrop: protectedProcedure.input(z2.object({ name: z2.string().min(2).max(120), cropType: z2.string().min(2).max(80), region: z2.string().max(160).optional() })).mutation(({ ctx, input }) => createCrop({ ownerId: ctx.user.id, ...input })),
     cases: protectedProcedure.query(({ ctx }) => getOwnerCases(ctx.user.id)),
     updateProfile: protectedProcedure.input(z2.object({ displayName: z2.string().min(2).max(160), region: z2.string().max(160).optional(), phone: z2.string().max(40).optional(), state: z2.string().max(100).optional(), district: z2.string().max(100).optional(), pinCode: z2.string().max(12).optional(), village: z2.string().max(160).optional(), primaryCrop: z2.string().min(2).max(120).optional(), farmingExperienceYears: z2.number().int().min(0).max(100).optional(), latitude: z2.number().min(-90).max(90).optional(), longitude: z2.number().min(-180).max(180).optional() })).mutation(({ ctx, input }) => updateProfile(ctx.user.id, input)),
-    analyzeScan: protectedProcedure.input(z2.object({ imageBase64: z2.string().min(32).max(12e6), mimeType: z2.string().regex(/^image\/(jpeg|png|webp)$/), cropId: z2.number().int().positive().optional(), fileName: z2.string().min(1).max(180) })).mutation(async ({ ctx, input }) => {
+    analyzeScan: protectedProcedure.input(z2.object({ imageBase64: z2.string().min(32).max(12e6), mimeType: z2.string().regex(/^image\/(jpeg|png|webp)$/), cropId: z2.number().int().positive().optional(), fileName: z2.string().min(1).max(180), fieldContext: fieldContextSchema })).mutation(async ({ ctx, input }) => {
       const key = `farmer-${ctx.user.id}/scans/${Date.now()}-${input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
       const buffer = Buffer.from(input.imageBase64.replace(/^data:[^;]+;base64,/, ""), "base64");
       let stored;
       let scanId;
       try {
         stored = await storagePut(key, buffer, input.mimeType);
-        scanId = await insertScan({ ownerId: ctx.user.id, cropId: input.cropId, imageKey: stored.key, imageUrl: stored.url, status: "analyzing", riskLevel: "unknown" });
+        scanId = await insertScan({ ownerId: ctx.user.id, cropId: input.cropId, imageKey: stored.key, imageUrl: stored.url, status: "analyzing", riskLevel: "unknown", soilType: input.fieldContext?.soilType, soilPh: input.fieldContext?.soilPh?.toString(), soilMoisture: input.fieldContext?.soilMoisture, cropCount: input.fieldContext?.cropCount, landArea: input.fieldContext?.landArea?.toString(), landUnit: input.fieldContext?.landUnit, fieldNotes: input.fieldContext?.fieldNotes, recommendationProgress: JSON.stringify([]) });
       } catch (persistenceError) {
         console.error("[Scan] Storage/database unavailable before AI analysis; continuing with AI:", persistenceError);
       }
       try {
+        const contextSummary = [
+          input.fieldContext?.soilType && `Soil type: ${input.fieldContext.soilType}`,
+          input.fieldContext?.soilPh !== void 0 && `Soil pH: ${input.fieldContext.soilPh}`,
+          input.fieldContext?.soilMoisture && `Soil moisture: ${input.fieldContext.soilMoisture}`,
+          input.fieldContext?.cropCount !== void 0 && `Number of crops/plants represented: ${input.fieldContext.cropCount}`,
+          input.fieldContext?.landArea !== void 0 && `Land area: ${input.fieldContext.landArea} ${input.fieldContext.landUnit ?? "units"}`,
+          input.fieldContext?.fieldNotes && `Farmer notes: ${input.fieldContext.fieldNotes}`
+        ].filter(Boolean).join("\n") || "No optional field context was supplied. Base the result on the image only.";
         const messages = [
-          { role: "system", content: "You are CropShield's crop-health assessment service. Analyze the actual crop image conservatively. Do not claim certainty; return only the requested structured JSON." },
-          { role: "user", content: [{ type: "text", text: "Assess this crop image for visible health concerns. Identify likely crop type, risk level, confidence from 0 to 100, visible symptoms, concise assessment, and practical recommendations." }, { type: "image_url", image_url: { url: `data:${input.mimeType};base64,${input.imageBase64.replace(/^data:[^;]+;base64,/, "")}` } }] }
+          { role: "system", content: "You are CropShield's crop-health assessment service. Analyze the actual crop image conservatively. Do not claim certainty; return only the requested structured JSON. Use farmer-supplied field context as supporting evidence, explain when image evidence is limited, and make recommendations practical, safe, and specific to the crop and context." },
+          { role: "user", content: [{ type: "text", text: `Assess this crop image for visible health concerns. Identify likely crop type, risk level, confidence from 0 to 100, visible symptoms, concise assessment, and practical recommendations. Return treatment, prevention, and monitoring actions where appropriate.
+
+Optional farmer field context (may be incomplete):
+${contextSummary}` }, { type: "image_url", image_url: { url: `data:${input.mimeType};base64,${input.imageBase64.replace(/^data:[^;]+;base64,/, "")}` } }] }
         ];
         let response;
         try {
@@ -1194,7 +1222,7 @@ var appRouter = router({
         const riskLevel = z2.enum(["low", "medium", "high", "critical"]).parse(parsed.riskLevel);
         if (!Number.isFinite(confidence) || confidence < 0 || confidence > 100 || typeof parsed.disease !== "string" || typeof parsed.assessment !== "string" || !Array.isArray(parsed.symptoms) || !Array.isArray(parsed.recommendations)) throw new Error("The crop assessment response was not valid structured data");
         if (scanId) {
-          await updateScan(scanId, ctx.user.id, { status: "complete", riskLevel, confidence: confidence.toFixed(2), disease: parsed.disease, symptoms: JSON.stringify(parsed.symptoms), assessment: parsed.assessment, recommendations: JSON.stringify(parsed.recommendations) });
+          await updateScan(scanId, ctx.user.id, { status: "complete", riskLevel, confidence: confidence.toFixed(2), disease: parsed.disease, symptoms: JSON.stringify(parsed.symptoms), assessment: parsed.assessment, recommendations: JSON.stringify(parsed.recommendations), recommendationProgress: JSON.stringify(parsed.recommendations.map((step) => ({ step, completed: false }))) });
         } else {
           console.warn("[Scan] AI succeeded, but no persistent scan record was created.");
         }
@@ -1205,7 +1233,7 @@ var appRouter = router({
             console.warn("[Scan] Notification failed after successful analysis:", notificationError);
           }
         }
-        return { scanId: scanId ?? 0, imageUrl: stored?.url ?? "", ...parsed };
+        return { scanId: scanId ?? 0, imageUrl: stored?.url ?? "", fieldContext: input.fieldContext ?? null, recommendationProgress: parsed.recommendations.map((step) => ({ step, completed: false })), ...parsed };
       } catch (error) {
         if (scanId) {
           try {
@@ -1217,6 +1245,10 @@ var appRouter = router({
         console.error("[Scan] analyzeScan failed:", error);
         throw error;
       }
+    }),
+    updateRecommendationProgress: protectedProcedure.input(z2.object({ scanId: z2.number().int().positive(), progress: z2.array(z2.object({ step: z2.string().trim().min(1).max(600), completed: z2.boolean() })).max(30) })).mutation(async ({ ctx, input }) => {
+      await updateScan(input.scanId, ctx.user.id, { recommendationProgress: JSON.stringify(input.progress) });
+      return { success: true };
     })
   }),
   weather: router({
