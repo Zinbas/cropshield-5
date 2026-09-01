@@ -1,0 +1,7 @@
+# CropShield 3.0 Validation
+
+The implementation was validated with `pnpm check` and `pnpm test`. The test suite passes four tests covering logout cookie clearing, administrator role rejection, administrator overview access, and authenticated farmer snapshot access. Responsive screenshots were captured for farmer dashboard, scan entry, farmer cases, admin dashboard, and admin cases at a 585px mobile viewport. The admin dashboard correctly renders zero-state approved aggregates when no approved records exist, rather than inventing system-wide values.
+
+The real crop scan path requires an authenticated farmer session and a valid JPEG, PNG, or WebP image. It uploads bytes through the server-side storage helper, calls the server-side Gemini-capable model with structured JSON schema output, persists the analysis on the scan record, optionally notifies the project owner for high risk, and creates a case through the protected mutation. A full live Gemini run was not executed in this sandbox because it would require a real authenticated user and a supplied crop image.
+
+The current project scaffold uses the managed Drizzle/MySQL database, Manus OAuth, and built-in S3-compatible storage supplied by the initialized full-stack template. The requested Supabase-specific infrastructure was not enabled because no Supabase URL, key, Auth, Storage, or RLS configuration was supplied and the initialized environment did not include that integration. The server-side procedures enforce owner IDs and administrator role checks within the available scaffold.

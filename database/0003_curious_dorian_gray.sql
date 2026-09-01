@@ -1,0 +1,1 @@
+ALTER TABLE `scans` MODIFY COLUMN `riskLevel` enum('low','medium','high','critical','unknown') NOT NULL DEFAULT 'unknown';

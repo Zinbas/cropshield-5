@@ -1,0 +1,1 @@
+ALTER TABLE `scans` ADD `disease` varchar(180);
