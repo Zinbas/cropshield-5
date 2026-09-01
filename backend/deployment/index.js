@@ -1110,6 +1110,7 @@ var adminProcedure2 = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") throw new Error("Administrator access required");
   return next();
 });
+var optionalText = (schema) => z2.union([schema, z2.literal("")]).optional().transform((value) => value || void 0);
 var fieldContextSchema = z2.object({
   soilType: z2.string().trim().max(120).optional(),
   soilPh: z2.number().min(0).max(14).optional(),
@@ -1137,7 +1138,7 @@ var appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
-    signup: publicProcedure.input(z2.object({ name: z2.string().trim().min(2).max(160), email: z2.string().trim().toLowerCase().email().max(320), password: z2.string().min(8).max(128), role: z2.enum(["user", "admin"]), phone: z2.string().trim().max(40).optional(), region: z2.string().trim().max(160).optional(), state: z2.string().trim().max(100).optional(), district: z2.string().trim().max(100).optional(), pinCode: z2.string().trim().max(12).optional(), village: z2.string().trim().max(160).optional(), primaryCrop: z2.string().trim().min(2).max(120).optional(), farmingExperienceYears: z2.number().int().min(0).max(100).optional(), latitude: z2.number().min(-90).max(90).optional(), longitude: z2.number().min(-180).max(180).optional() })).mutation(async ({ ctx, input }) => {
+    signup: publicProcedure.input(z2.object({ name: z2.string().trim().min(2).max(160), email: z2.string().trim().toLowerCase().email().max(320), password: z2.string().min(8).max(128), role: z2.enum(["user", "admin"]), phone: z2.string().trim().max(40).optional(), region: z2.string().trim().max(160).optional(), state: z2.string().trim().max(100).optional(), district: z2.string().trim().max(100).optional(), pinCode: z2.string().trim().max(12).optional(), village: z2.string().trim().max(160).optional(), primaryCrop: optionalText(z2.string().trim().min(2).max(120)), farmingExperienceYears: z2.number().int().min(0).max(100).optional(), latitude: z2.number().min(-90).max(90).optional(), longitude: z2.number().min(-180).max(180).optional() })).mutation(async ({ ctx, input }) => {
       const email = normalizeLocalEmail(input.email);
       if (await getUserByEmail(email)) throw new Error("An account with this email already exists");
       if (input.role === "admin" && !canCreateLocalAdmin(email, await countAdmins())) throw new Error("Administrator signup is reserved for the configured owner account and only one account is allowed");
@@ -1172,7 +1173,7 @@ var appRouter = router({
     approvedDrugStores: protectedProcedure.query(() => getApprovedDrugStores()),
     createCrop: protectedProcedure.input(z2.object({ name: z2.string().min(2).max(120), cropType: z2.string().min(2).max(80), region: z2.string().max(160).optional() })).mutation(({ ctx, input }) => createCrop({ ownerId: ctx.user.id, ...input })),
     cases: protectedProcedure.query(({ ctx }) => getOwnerCases(ctx.user.id)),
-    updateProfile: protectedProcedure.input(z2.object({ displayName: z2.string().min(2).max(160), region: z2.string().max(160).optional(), phone: z2.string().max(40).optional(), state: z2.string().max(100).optional(), district: z2.string().max(100).optional(), pinCode: z2.string().max(12).optional(), village: z2.string().max(160).optional(), primaryCrop: z2.string().min(2).max(120).optional(), farmingExperienceYears: z2.number().int().min(0).max(100).optional(), latitude: z2.number().min(-90).max(90).optional(), longitude: z2.number().min(-180).max(180).optional() })).mutation(({ ctx, input }) => updateProfile(ctx.user.id, input)),
+    updateProfile: protectedProcedure.input(z2.object({ displayName: z2.string().min(2).max(160), region: z2.string().max(160).optional(), phone: z2.string().max(40).optional(), state: z2.string().max(100).optional(), district: z2.string().max(100).optional(), pinCode: z2.string().max(12).optional(), village: z2.string().max(160).optional(), primaryCrop: optionalText(z2.string().trim().min(2).max(120)), farmingExperienceYears: z2.number().int().min(0).max(100).optional(), latitude: z2.number().min(-90).max(90).optional(), longitude: z2.number().min(-180).max(180).optional() })).mutation(({ ctx, input }) => updateProfile(ctx.user.id, input)),
     analyzeScan: protectedProcedure.input(z2.object({ imageBase64: z2.string().min(32).max(12e6), mimeType: z2.string().regex(/^image\/(jpeg|png|webp)$/), cropId: z2.number().int().positive().optional(), fileName: z2.string().min(1).max(180), fieldContext: fieldContextSchema })).mutation(async ({ ctx, input }) => {
       const key = `farmer-${ctx.user.id}/scans/${Date.now()}-${input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
       const buffer = Buffer.from(input.imageBase64.replace(/^data:[^;]+;base64,/, ""), "base64");
@@ -1182,7 +1183,8 @@ var appRouter = router({
         stored = await storagePut(key, buffer, input.mimeType);
         scanId = await insertScan({ ownerId: ctx.user.id, cropId: input.cropId, imageKey: stored.key, imageUrl: stored.url, status: "analyzing", riskLevel: "unknown", soilType: input.fieldContext?.soilType, soilPh: input.fieldContext?.soilPh?.toString(), soilMoisture: input.fieldContext?.soilMoisture, cropCount: input.fieldContext?.cropCount, landArea: input.fieldContext?.landArea?.toString(), landUnit: input.fieldContext?.landUnit, fieldNotes: input.fieldContext?.fieldNotes, recommendationProgress: JSON.stringify([]) });
       } catch (persistenceError) {
-        console.error("[Scan] Storage/database unavailable before AI analysis; continuing with AI:", persistenceError);
+        console.error("[Scan] Storage/database unavailable before AI analysis:", persistenceError);
+        throw new Error("The scan could not be saved. Please check your connection and try again.");
       }
       try {
         const contextSummary = [

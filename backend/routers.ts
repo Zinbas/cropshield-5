@@ -22,6 +22,8 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   return next();
 });
 
+const optionalText = (schema: z.ZodString) => z.union([schema, z.literal("")]).optional().transform((value) => value || undefined);
+
 const fieldContextSchema = z.object({
   soilType: z.string().trim().max(120).optional(),
   soilPh: z.number().min(0).max(14).optional(),
@@ -51,7 +53,7 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
-    signup: publicProcedure.input(z.object({ name: z.string().trim().min(2).max(160), email: z.string().trim().toLowerCase().email().max(320), password: z.string().min(8).max(128), role: z.enum(["user", "admin"]), phone: z.string().trim().max(40).optional(), region: z.string().trim().max(160).optional(), state: z.string().trim().max(100).optional(), district: z.string().trim().max(100).optional(), pinCode: z.string().trim().max(12).optional(), village: z.string().trim().max(160).optional(), primaryCrop: z.string().trim().min(2).max(120).optional(), farmingExperienceYears: z.number().int().min(0).max(100).optional(), latitude: z.number().min(-90).max(90).optional(), longitude: z.number().min(-180).max(180).optional() })).mutation(async ({ ctx, input }) => {
+    signup: publicProcedure.input(z.object({ name: z.string().trim().min(2).max(160), email: z.string().trim().toLowerCase().email().max(320), password: z.string().min(8).max(128), role: z.enum(["user", "admin"]), phone: z.string().trim().max(40).optional(), region: z.string().trim().max(160).optional(), state: z.string().trim().max(100).optional(), district: z.string().trim().max(100).optional(), pinCode: z.string().trim().max(12).optional(), village: z.string().trim().max(160).optional(), primaryCrop: optionalText(z.string().trim().min(2).max(120)), farmingExperienceYears: z.number().int().min(0).max(100).optional(), latitude: z.number().min(-90).max(90).optional(), longitude: z.number().min(-180).max(180).optional() })).mutation(async ({ ctx, input }) => {
       const email = normalizeLocalEmail(input.email);
       if (await getUserByEmail(email)) throw new Error("An account with this email already exists");
       if (input.role === "admin" && !canCreateLocalAdmin(email, await countAdmins())) throw new Error("Administrator signup is reserved for the configured owner account and only one account is allowed");
@@ -86,19 +88,20 @@ export const appRouter = router({
     approvedDrugStores: protectedProcedure.query(() => getApprovedDrugStores()),
     createCrop: protectedProcedure.input(z.object({ name: z.string().min(2).max(120), cropType: z.string().min(2).max(80), region: z.string().max(160).optional() })).mutation(({ ctx, input }) => createCrop({ ownerId: ctx.user.id, ...input })),
     cases: protectedProcedure.query(({ ctx }) => getOwnerCases(ctx.user.id)),
-    updateProfile: protectedProcedure.input(z.object({ displayName: z.string().min(2).max(160), region: z.string().max(160).optional(), phone: z.string().max(40).optional(), state: z.string().max(100).optional(), district: z.string().max(100).optional(), pinCode: z.string().max(12).optional(), village: z.string().max(160).optional(), primaryCrop: z.string().min(2).max(120).optional(), farmingExperienceYears: z.number().int().min(0).max(100).optional(), latitude: z.number().min(-90).max(90).optional(), longitude: z.number().min(-180).max(180).optional() })).mutation(({ ctx, input }) => updateProfile(ctx.user.id, input)),
+    updateProfile: protectedProcedure.input(z.object({ displayName: z.string().min(2).max(160), region: z.string().max(160).optional(), phone: z.string().max(40).optional(), state: z.string().max(100).optional(), district: z.string().max(100).optional(), pinCode: z.string().max(12).optional(), village: z.string().max(160).optional(), primaryCrop: optionalText(z.string().trim().min(2).max(120)), farmingExperienceYears: z.number().int().min(0).max(100).optional(), latitude: z.number().min(-90).max(90).optional(), longitude: z.number().min(-180).max(180).optional() })).mutation(({ ctx, input }) => updateProfile(ctx.user.id, input)),
     analyzeScan: protectedProcedure.input(z.object({ imageBase64: z.string().min(32).max(12_000_000), mimeType: z.string().regex(/^image\/(jpeg|png|webp)$/), cropId: z.number().int().positive().optional(), fileName: z.string().min(1).max(180), fieldContext: fieldContextSchema })).mutation(async ({ ctx, input }) => {
       const key = `farmer-${ctx.user.id}/scans/${Date.now()}-${input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
       const buffer = Buffer.from(input.imageBase64.replace(/^data:[^;]+;base64,/, ""), "base64");
       let stored: { key: string; url: string } | undefined;
       let scanId: number | undefined;
 
-      // Start persistence when available, but never let storage/database failure prevent the AI request.
+      // A scan is only successful when its image and initial database record are both saved.
       try {
         stored = await storagePut(key, buffer, input.mimeType);
         scanId = await insertScan({ ownerId: ctx.user.id, cropId: input.cropId, imageKey: stored.key, imageUrl: stored.url, status: "analyzing", riskLevel: "unknown", soilType: input.fieldContext?.soilType, soilPh: input.fieldContext?.soilPh?.toString(), soilMoisture: input.fieldContext?.soilMoisture, cropCount: input.fieldContext?.cropCount, landArea: input.fieldContext?.landArea?.toString(), landUnit: input.fieldContext?.landUnit, fieldNotes: input.fieldContext?.fieldNotes, recommendationProgress: JSON.stringify([]) });
       } catch (persistenceError) {
-        console.error("[Scan] Storage/database unavailable before AI analysis; continuing with AI:", persistenceError);
+        console.error("[Scan] Storage/database unavailable before AI analysis:", persistenceError);
+        throw new Error("The scan could not be saved. Please check your connection and try again.");
       }
 
       try {

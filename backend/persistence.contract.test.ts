@@ -38,6 +38,17 @@ describe("CropShield persistence workflows", () => {
     expect(result.fieldContext).toMatchObject({ soilType: "Sandy loam", landArea: 2.5 });
   });
 
+  it("does not return a successful assessment when storage persistence fails", async () => {
+    const { appRouter } = await import("./routers");
+    mocks.storagePut.mockRejectedValueOnce(new Error("storage unavailable"));
+    mocks.insertScan.mockClear();
+    mocks.invokeLLM.mockClear();
+    const caller = appRouter.createCaller(context("user"));
+    await expect(caller.farmer.analyzeScan({ imageBase64: `data:image/jpeg;base64,${"a".repeat(40)}`, mimeType: "image/jpeg", fileName: "leaf.jpg", fieldContext: undefined })).rejects.toThrow("The scan could not be saved");
+    expect(mocks.insertScan).not.toHaveBeenCalled();
+    expect(mocks.invokeLLM).not.toHaveBeenCalled();
+  });
+
   it("persists recommendation progress for the current farmer only", async () => {
     const { appRouter } = await import("./routers");
     const caller = appRouter.createCaller(context("user"));

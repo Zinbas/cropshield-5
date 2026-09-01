@@ -36,3 +36,31 @@
 - [x] Fix Manus preview entrypoints so the managed service serves the imported frontend/ and backend/ CropShield application instead of the scaffold client/ example page.
 - [x] Re-capture desktop and mobile previews after correcting the service entrypoints and confirm the CropShield onboarding screen renders.
 - [x] Add visible recommendation completion counts to each farmer and administrator case row, using persisted scan recommendation progress.
+
+- [x] Fix administrator onboarding validation so the optional primary crop field does not reject an empty value.
+- [ ] Verify protected administrator sign-up, sign-in, and owner-only access behavior.
+- [ ] Verify database-backed expert approval, rejection, and suspension workflows with real user-provided records only.
+- [ ] Verify database-backed store approval, rejection, and suspension workflows with real user-provided records only.
+- [ ] Verify administrator farmer directory, scan review, case review, analytics, and location summaries against managed database queries.
+- [x] Add or update Vitest coverage for administrator validation and approval workflow behavior.
+- [ ] Run checks, tests, build, HTTP health, and responsive administrator preview; save a new Manus checkpoint.
+
+- [x] Rework farmer and administrator navigation around a small set of mobile-first primary tasks instead of showing every capability at once.
+- [ ] Keep detailed records, filters, and management actions behind focused subviews, drawers, or progressive disclosure rather than one overloaded page.
+- [x] Make mobile touch targets, sticky bottom navigation, back navigation, and task-specific empty/loading/error states consistent across farmer and administrator flows.
+- [x] Fix administrator signup so empty optional primary-crop input is accepted as omitted.
+- [ ] Exercise administrator approval actions with real database records supplied by the user, without fabricated directory data.
+- [ ] Add or update tests for focused navigation, optional admin signup fields, and approval workflow behavior.
+- [ ] Capture and review the mobile-first administrator and farmer previews, then save a new Manus checkpoint.
+
+- [ ] Apply the mobile-first focused-screen redesign across the entire app: onboarding, authentication, farmer dashboard, crops, scan, results, history, cases, experts, stores, profile, administrator review, directories, and analytics.
+- [ ] Ensure no primary user journey requires consuming every feature on one page; use progressive disclosure and focused task screens throughout.
+
+- [x] Trace why completed scan assessments are not appearing in Scan History and Cases, then fix the persistence and refresh path.
+- [ ] Add regression coverage proving a completed scan is persisted and subsequently returned to farmer history and cases.
+- [x] Reduce mobile information density across the app with clearer hierarchy, whitespace, progressive disclosure, and focused actions.
+- [x] Shift the visual theme toward calm agriculture-inspired greens, soil neutrals, and warm natural accents while preserving strong readability.
+- [x] Add restrained smooth transitions and respect reduced-motion preferences without distracting animation.
+- [x] Re-run checks, tests, build, HTTP health, and mobile/desktop preview captures; save a new checkpoint.
+- [ ] Audit and verify consistent back navigation and task-state presentation across the remaining farmer and administrator screens.
+- [x] Capture a fresh desktop preview after the latest mobile-first and persistence changes before the next checkpoint.

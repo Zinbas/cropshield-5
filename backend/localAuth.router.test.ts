@@ -58,6 +58,16 @@ describe("local auth router", () => {
     expect(output.cookies[0]?.name).toBe("cropshield_local_session");
   });
 
+  it("accepts an empty optional primary crop for the configured administrator", async () => {
+    mocks.getUserByEmail.mockResolvedValueOnce(undefined);
+    mocks.countAdmins.mockResolvedValueOnce(0);
+    mocks.createLocalUser.mockResolvedValueOnce({ ...adminUser, name: "Owner Admin", email: "abhidey0822@gmail.com" });
+    const { appRouter } = await import("./routers");
+    const output = response();
+    await appRouter.createCaller(context(output.res)).auth.signup({ name: "Owner Admin", email: "abhidey0822@gmail.com", password: "CropTest01!", role: "admin", primaryCrop: "" });
+    expect(mocks.updateProfile).toHaveBeenCalledWith(999, expect.objectContaining({ primaryCrop: undefined }));
+  });
+
   it("rejects duplicate local account registration", async () => {
     mocks.getUserByEmail.mockResolvedValueOnce(baseUser);
     const { appRouter } = await import("./routers");
