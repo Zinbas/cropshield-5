@@ -10,7 +10,7 @@ describe("local test authentication", () => {
     expect(await verifyPassword("wrong-password", hash)).toBe(false);
   });
 
-  it("normalizes emails and restricts administrator bootstrap", () => {
+  it("normalizes emails and allows open administrator testing", () => {
     expect(normalizeLocalEmail("  ABHIDEY0822@GMAIL.COM ")).toBe(LOCAL_ADMIN_EMAIL);
     expect(canCreateLocalAdmin(LOCAL_ADMIN_EMAIL, 0)).toBe(true);
     expect(canCreateLocalAdmin("other@example.com", 0)).toBe(true);

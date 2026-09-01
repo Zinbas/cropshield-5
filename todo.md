@@ -38,20 +38,20 @@
 - [x] Add visible recommendation completion counts to each farmer and administrator case row, using persisted scan recommendation progress.
 
 - [x] Fix administrator onboarding validation so the optional primary crop field does not reject an empty value.
-- [ ] Verify protected administrator sign-up, sign-in, and owner-only access behavior.
+- [x] Verify administrator sign-up, sign-in, and current open-testing access behavior; this supersedes the earlier owner-only requirement.
 - [ ] Verify database-backed expert approval, rejection, and suspension workflows with real user-provided records only.
 - [ ] Verify database-backed store approval, rejection, and suspension workflows with real user-provided records only.
 - [ ] Verify administrator farmer directory, scan review, case review, analytics, and location summaries against managed database queries.
 - [x] Add or update Vitest coverage for administrator validation and approval workflow behavior.
-- [ ] Run checks, tests, build, HTTP health, and responsive administrator preview; save a new Manus checkpoint.
+- [x] Run checks, tests, build, HTTP health, and responsive administrator preview; save a new Manus checkpoint.
 
 - [x] Rework farmer and administrator navigation around a small set of mobile-first primary tasks instead of showing every capability at once.
 - [ ] Keep detailed records, filters, and management actions behind focused subviews, drawers, or progressive disclosure rather than one overloaded page.
 - [x] Make mobile touch targets, sticky bottom navigation, back navigation, and task-specific empty/loading/error states consistent across farmer and administrator flows.
 - [x] Fix administrator signup so empty optional primary-crop input is accepted as omitted.
 - [ ] Exercise administrator approval actions with real database records supplied by the user, without fabricated directory data.
-- [ ] Add or update tests for focused navigation, optional admin signup fields, and approval workflow behavior.
-- [ ] Capture and review the mobile-first administrator and farmer previews, then save a new Manus checkpoint.
+- [x] Add or update tests for focused navigation, optional admin signup fields, and approval workflow behavior.
+- [x] Capture and review the mobile-first administrator and farmer previews, then save a new Manus checkpoint.
 
 - [ ] Apply the mobile-first focused-screen redesign across the entire app: onboarding, authentication, farmer dashboard, crops, scan, results, history, cases, experts, stores, profile, administrator review, directories, and analytics.
 - [ ] Ensure no primary user journey requires consuming every feature on one page; use progressive disclosure and focused task screens throughout.
@@ -85,10 +85,14 @@
 - [x] Fix farmer signup GPS reverse-geocoding so requested address fields visibly populate after location capture.
 - [x] Provide a farmer Profile map that shows the saved farm’s exact location and supports updating the pin.
 - [x] Add regression coverage for open admin signup, role-safe profile fields, language control availability, and GPS/map behavior.
-- [ ] Re-run checks, tests, build, health, and responsive previews, then save a milestone checkpoint.
+- [x] Re-run checks, tests, build, health, and responsive previews, then save a milestone checkpoint.
 - [x] Allow any valid local account to sign up and sign in as administrator for the current testing phase.
 - [x] Hide farmer-only region, GPS, address, and exact-farm-map content from administrator Profile views.
 - [x] Provide a language selector on the unauthenticated login/signup screen.
 - [x] Apply signup GPS reverse-geocoded address autofill and retain the farmer Profile exact-location map.
 - [x] Update administrator authentication regression coverage for open testing mode.
 - [x] Run TypeScript, 50-test, production-build, HTTP 200, and mobile-preview validation for this correction batch.
+
+- [x] Prevent camera/gallery photo selection from submitting the page or reloading the scan flow.
+- [x] Preserve selected image preview, crop/context fields, and scan-step state after photo selection.
+- [x] Add regression coverage for photo input change handling and rerun the full preview validation loop; live gallery upload verified in docs/PHOTO_PICKER_VERIFICATION.md.

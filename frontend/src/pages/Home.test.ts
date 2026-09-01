@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildRecommendationProgress, formatFieldContext, formatGpsLabel, getExpertContactHref, getScanNextSteps, getSection, getUserInitials, LOCAL_SIGNUP_ROLES, parseRecommendationProgress, validateCropImage } from "./Home";
+import type { ChangeEvent } from "react";
+import { buildRecommendationProgress, formatFieldContext, formatGpsLabel, getExpertContactHref, getScanNextSteps, getSection, getUserInitials, handlePhotoInputChange, LOCAL_SIGNUP_ROLES, parseRecommendationProgress, validateCropImage } from "./Home";
 
 describe("CropShield workspace section routing", () => {
   it("recognizes scan as a primary action route even though it is not persistent navigation", () => {
@@ -23,8 +24,20 @@ describe("CropShield workspace section routing", () => {
   it("exposes the configured-owner administrator signup role", () => {
     expect(LOCAL_SIGNUP_ROLES).toContainEqual({
       value: "admin",
-      label: "Administrator (configured owner only)",
+      label: "Administrator",
     });
+  });
+
+  it("isolates photo selection from form navigation and resets the input", () => {
+    let prevented = false;
+    let stopped = false;
+    let forwarded: File | undefined;
+    const input = { files: [new File(["image"], "leaf.jpg", { type: "image/jpeg" })], value: "selected" } as unknown as HTMLInputElement;
+    handlePhotoInputChange({ preventDefault: () => { prevented = true; }, stopPropagation: () => { stopped = true; }, currentTarget: input } as ChangeEvent<HTMLInputElement>, (file) => { forwarded = file; });
+    expect(prevented).toBe(true);
+    expect(stopped).toBe(true);
+    expect(forwarded?.name).toBe("leaf.jpg");
+    expect(input.value).toBe("");
   });
 
   it("creates readable initials from the signed-in user name", () => {
