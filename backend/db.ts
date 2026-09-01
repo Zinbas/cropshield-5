@@ -123,7 +123,7 @@ export async function getAdminOverview() {
     db.select({ count: sql<number>`count(*)` }).from(cases).where(sql`${cases.status} <> 'resolved'`),
     db.select({ count: sql<number>`count(*)` }).from(scans).where(and(eq(scans.status, "complete"), eq(scans.riskLevel, "low"), sql`${scans.approvedAt} IS NOT NULL`)),
     db.select({ count: sql<number>`count(*)` }).from(scans).where(and(eq(scans.status, "complete"), eq(scans.riskLevel, "medium"), sql`${scans.approvedAt} IS NOT NULL`)),
-    db.select({ count: sql<number>`count(*)` }).from(scans).where(and(eq(scans.status, "complete"), eq(scans.riskLevel, "high"), sql`${scans.approvedAt} IS NOT NULL`)),
+    db.select({ count: sql<number>`count(*)` }).from(scans).where(and(eq(scans.status, "complete"), or(eq(scans.riskLevel, "high"), eq(scans.riskLevel, "critical")), sql`${scans.approvedAt} IS NOT NULL`)),
     db.select({ average: sql<number>`avg(${scans.confidence})` }).from(scans).where(and(eq(scans.status, "complete"), sql`${scans.approvedAt} IS NOT NULL`)),
     db.select().from(scans).where(and(eq(scans.status, "complete"), sql`${scans.approvedAt} IS NOT NULL`)).orderBy(desc(scans.createdAt)).limit(20),
     db.select({ region: crops.region, count: sql<number>`count(*)` }).from(crops).groupBy(crops.region).orderBy(desc(sql`count(*)`)).limit(10),

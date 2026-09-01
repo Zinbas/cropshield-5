@@ -64,3 +64,17 @@
 - [x] Re-run checks, tests, build, HTTP health, and mobile/desktop preview captures; save a new checkpoint.
 - [ ] Audit and verify consistent back navigation and task-state presentation across the remaining farmer and administrator screens.
 - [x] Capture a fresh desktop preview after the latest mobile-first and persistence changes before the next checkpoint.
+
+- [x] Replace placeholder health-distribution analytics with real, correctly computed data and readable zero-state handling.
+- [x] Organize desktop and mobile headers so navigation, profile, alerts, network state, and More actions have clear hierarchy.
+- [x] Replace the regional risk placeholder with the existing Manus-proxied Google Maps component, including map/satellite views and exact pin placement.
+- [x] Add GPS-to-address autofill for state, district, PIN, village, and town fields, with manual editing preserved when geolocation or reverse geocoding is unavailable.
+- [x] Add a language selector and translation system for English, Hindi, Marathi, Assamese, and Bengali across primary farmer and administrator journeys.
+- [x] Add tests for analytics zero states, GPS field mapping, map coordinate handling, and language persistence.
+- [x] Validate all changes on mobile and desktop, run checks/tests/build/health, save a milestone checkpoint, and continue until the tracker is complete.
+- [x] Correct backend critical-risk distribution counts to include both high and critical approved scans.
+- [x] Make regional map markers react to asynchronous location-summary data changes.
+- [x] Apply reverse-geocoded GPS autofill to signup as well as Profile.
+- [ ] Expand translations beyond navigation into primary headings, forms, actions, and status/error text.
+- [ ] Add explicit analytics, GPS mapping, and map-coordinate regression tests.
+- [x] Re-run validation and save a fresh checkpoint after this analytics/map/GPS/i18n correction batch.
