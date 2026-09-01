@@ -1,4 +1,4 @@
-import type { CreateExpressContextOptions } from "@trpc/backend/adapters/express";
+import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../database/schema";
 import { getUserByOpenId } from "../db";
 import { getLocalSessionOpenId, LOCAL_SESSION_COOKIE, toSafeUser } from "../localAuth";

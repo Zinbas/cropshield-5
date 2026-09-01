@@ -1,9 +1,9 @@
-// server/_core/app.ts
+// backend/_core/app.ts
 import "dotenv/config";
 import express2 from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
-// shared/const.ts
+// common/const.ts
 var COOKIE_NAME = "app_session_id";
 var ONE_YEAR_MS = 1e3 * 60 * 60 * 24 * 365;
 var AXIOS_TIMEOUT_MS = 3e4;
@@ -25,14 +25,14 @@ var decodeOAuthState = (state) => {
   return { redirectUri: decoded };
 };
 
-// server/_core/oauth.ts
+// backend/_core/oauth.ts
 import { parse as parseCookieHeader2 } from "cookie";
 
-// server/db.ts
+// backend/db.ts
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 
-// drizzle/schema.ts
+// database/schema.ts
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal } from "drizzle-orm/mysql-core";
 var users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -156,7 +156,7 @@ var weatherCache = mysqlTable("weatherCache", {
   expiresAt: timestamp("expiresAt").notNull()
 });
 
-// server/_core/env.ts
+// backend/_core/env.ts
 var ENV = {
   appId: process.env.VITE_APP_ID ?? "",
   cookieSecret: process.env.JWT_SECRET ?? "",
@@ -166,7 +166,7 @@ var ENV = {
   isProduction: process.env.NODE_ENV === "production"
 };
 
-// server/localAuth.ts
+// backend/localAuth.ts
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { jwtVerify, SignJWT } from "jose";
@@ -214,7 +214,7 @@ async function getLocalSessionOpenId(token) {
   }
 }
 
-// server/db.ts
+// backend/db.ts
 var _db = null;
 async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
@@ -484,7 +484,7 @@ async function setDrugStoreStatus(id, status) {
   await db.update(drugStores).set({ status }).where(eq(drugStores.id, id));
 }
 
-// server/_core/cookies.ts
+// backend/_core/cookies.ts
 function isSecureRequest(req) {
   if (req.protocol === "https") return true;
   const forwardedProto = req.headers["x-forwarded-proto"];
@@ -504,7 +504,7 @@ function getSessionCookieOptions(req) {
   };
 }
 
-// shared/_core/errors.ts
+// common/_core/errors.ts
 var HttpError = class extends Error {
   constructor(statusCode, message) {
     super(message);
@@ -514,7 +514,7 @@ var HttpError = class extends Error {
 };
 var ForbiddenError = (msg) => new HttpError(403, msg);
 
-// server/_core/sdk.ts
+// backend/_core/sdk.ts
 import axios from "axios";
 import { parse as parseCookieHeader } from "cookie";
 import { SignJWT as SignJWT2, jwtVerify as jwtVerify2 } from "jose";
@@ -761,7 +761,7 @@ function buildCronUser(userInfo) {
 }
 var sdk = new SDKServer();
 
-// server/_core/oauth.ts
+// backend/_core/oauth.ts
 function getQueryParam(req, key) {
   const value = req.query[key];
   return typeof value === "string" ? value : void 0;
@@ -809,7 +809,7 @@ function registerOAuthRoutes(app) {
   });
 }
 
-// server/_core/storageProxy.ts
+// backend/_core/storageProxy.ts
 function registerStorageProxy(app) {
   app.get("/manus-storage/*", async (req, res) => {
     const key = req.params[0];
@@ -850,13 +850,13 @@ function registerStorageProxy(app) {
   });
 }
 
-// server/routers.ts
+// backend/routers.ts
 import { z as z2 } from "zod";
 
-// server/_core/systemRouter.ts
+// backend/_core/systemRouter.ts
 import { z } from "zod";
 
-// server/_core/notification.ts
+// backend/_core/notification.ts
 import { TRPCError } from "@trpc/server";
 var TITLE_MAX_LENGTH = 1200;
 var CONTENT_MAX_LENGTH = 2e4;
@@ -938,7 +938,7 @@ async function notifyOwner(payload) {
   }
 }
 
-// server/_core/trpc.ts
+// backend/_core/trpc.ts
 import { initTRPC, TRPCError as TRPCError2 } from "@trpc/server";
 import superjson from "superjson";
 var t = initTRPC.context().create({
@@ -974,7 +974,7 @@ var adminProcedure = t.procedure.use(
   })
 );
 
-// server/_core/systemRouter.ts
+// backend/_core/systemRouter.ts
 var systemRouter = router({
   health: publicProcedure.input(
     z.object({
@@ -996,7 +996,7 @@ var systemRouter = router({
   })
 });
 
-// server/_core/llm.ts
+// backend/_core/llm.ts
 var DEFAULT_MODEL = "gemini-3-flash-preview";
 function endpoint() {
   const base = process.env.BUILT_IN_FORGE_API_URL;
@@ -1044,7 +1044,7 @@ async function invokeLLM(params) {
   return request("", { method: "POST", body: JSON.stringify(normalizeParams(params)) });
 }
 
-// server/storage.ts
+// backend/storage.ts
 function getForgeConfig() {
   const forgeUrl = process.env.EXTERNAL_SERVICE_URL ?? "";
   const forgeKey = process.env.EXTERNAL_SERVICE_KEY ?? "";
@@ -1090,7 +1090,7 @@ async function storagePut(relKey, data, contentType = "application/octet-stream"
   return { key, url: `/manus-storage/${key}` };
 }
 
-// server/routers.ts
+// backend/routers.ts
 async function fetchOpenMeteoWeather(latitude, longitude, fetcher = fetch) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,weather_code&hourly=precipitation_probability&forecast_days=2&timezone=auto`;
   const response = await fetcher(url);
@@ -1242,7 +1242,7 @@ var appRouter = router({
   })
 });
 
-// server/_core/context.ts
+// backend/_core/context.ts
 async function createContext(opts) {
   let user = null;
   try {
@@ -1263,7 +1263,7 @@ async function createContext(opts) {
   };
 }
 
-// server/_core/static.ts
+// backend/_core/static.ts
 import express from "express";
 import fs from "fs";
 import path from "path";
@@ -1280,7 +1280,7 @@ function serveStatic(app) {
   });
 }
 
-// server/_core/app.ts
+// backend/_core/app.ts
 function createBaseApp(options = {}) {
   const app = express2();
   app.use(express2.json({ limit: "50mb" }));
@@ -1307,7 +1307,7 @@ function createBaseApp(options = {}) {
   return app;
 }
 
-// server/_core/vercel.ts
+// backend/_core/vercel.ts
 var appPromise = Promise.resolve(createBaseApp());
 async function handler(req, res) {
   const app = await appPromise;
