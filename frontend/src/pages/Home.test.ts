@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ChangeEvent } from "react";
-import { buildRecommendationProgress, formatFieldContext, formatGpsLabel, getExpertContactHref, getScanNextSteps, getSection, getUserInitials, handlePhotoInputChange, LOCAL_SIGNUP_ROLES, parseRecommendationProgress, validateCropImage } from "./Home";
+import { buildRecommendationProgress, formatFieldContext, formatGpsLabel, getExpertContactHref, getScanNextSteps, getSection, getUserInitials, handlePhotoInputChange, LOCAL_SIGNUP_ROLES, mapGeocodedAddress, parseRecommendationProgress, validateCropImage } from "./Home";
 
 describe("CropShield workspace section routing", () => {
   it("recognizes scan as a primary action route even though it is not persistent navigation", () => {
@@ -38,6 +38,16 @@ describe("CropShield workspace section routing", () => {
     expect(stopped).toBe(true);
     expect(forwarded?.name).toBe("leaf.jpg");
     expect(input.value).toBe("");
+  });
+
+  it("maps reverse-geocoded GPS components into signup fields", () => {
+    expect(mapGeocodedAddress("Nashik, Maharashtra 422001, India", [
+      { long_name: "Maharashtra", types: ["administrative_area_level_1"] },
+      { long_name: "Nashik", types: ["administrative_area_level_2"] },
+      { long_name: "422001", types: ["postal_code"] },
+      { long_name: "Nashik", types: ["locality"] },
+      { long_name: "Makhmalabad", types: ["sublocality_level_1"] },
+    ], { state: "", district: "", pinCode: "", village: "", town: "" })).toMatchObject({ region: "Nashik, Maharashtra 422001, India", state: "Maharashtra", district: "Nashik", pinCode: "422001", village: "Makhmalabad", town: "Nashik" });
   });
 
   it("creates readable initials from the signed-in user name", () => {

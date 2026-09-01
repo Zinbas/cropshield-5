@@ -61,10 +61,10 @@ export async function updateLastSignedIn(userId: number) {
   await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, userId));
 }
 
-export async function updateProfile(userId: number, data: { displayName: string; region?: string; phone?: string; state?: string; district?: string; pinCode?: string; village?: string; primaryCrop?: string; farmingExperienceYears?: number; latitude?: number; longitude?: number }) {
+export async function updateProfile(userId: number, data: { displayName: string; region?: string; phone?: string; state?: string; district?: string; pinCode?: string; village?: string; town?: string; primaryCrop?: string; farmingExperienceYears?: number; latitude?: number; longitude?: number }) {
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
-  const values = { userId, displayName: data.displayName, region: data.region, phone: data.phone, state: data.state, district: data.district, pinCode: data.pinCode, village: data.village, primaryCrop: data.primaryCrop, farmingExperienceYears: data.farmingExperienceYears, latitude: data.latitude?.toString(), longitude: data.longitude?.toString() };
-  await db.insert(profiles).values(values).onDuplicateKeyUpdate({ set: { displayName: data.displayName, region: data.region ?? null, phone: data.phone ?? null, state: data.state ?? null, district: data.district ?? null, pinCode: data.pinCode ?? null, village: data.village ?? null, primaryCrop: data.primaryCrop ?? null, farmingExperienceYears: data.farmingExperienceYears ?? null, latitude: data.latitude?.toString() ?? null, longitude: data.longitude?.toString() ?? null } });
+  const values = { userId, displayName: data.displayName, region: data.region, phone: data.phone, state: data.state, district: data.district, pinCode: data.pinCode, village: data.village, town: data.town, primaryCrop: data.primaryCrop, farmingExperienceYears: data.farmingExperienceYears, latitude: data.latitude?.toString(), longitude: data.longitude?.toString() };
+  await db.insert(profiles).values(values).onDuplicateKeyUpdate({ set: { displayName: data.displayName, region: data.region ?? null, phone: data.phone ?? null, state: data.state ?? null, district: data.district ?? null, pinCode: data.pinCode ?? null, village: data.village ?? null, town: data.town ?? null, primaryCrop: data.primaryCrop ?? null, farmingExperienceYears: data.farmingExperienceYears ?? null, latitude: data.latitude?.toString() ?? null, longitude: data.longitude?.toString() ?? null } });
 }
 
 export async function getFarmerSnapshot(ownerId: number) {

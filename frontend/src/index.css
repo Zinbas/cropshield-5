@@ -934,3 +934,6 @@ body { background: #ffffff; }
 .mobile-more-sheet>button span{flex:1}.mobile-more-sheet>button.active{color:var(--primary);font-weight:700}
 @media(min-width:761px){.mobile-more-sheet{display:none}}
 
+
+/* Signup geocoder initializer: functional but intentionally invisible so the form stays focused. */
+.signup-geocoder-map{position:absolute!important;width:1px!important;height:1px!important;min-height:1px!important;opacity:0!important;pointer-events:none!important;overflow:hidden!important}.details-card{position:relative}

@@ -58,6 +58,7 @@ var profiles = mysqlTable("profiles", {
   district: varchar("district", { length: 100 }),
   pinCode: varchar("pinCode", { length: 12 }),
   village: varchar("village", { length: 160 }),
+  town: varchar("town", { length: 160 }),
   primaryCrop: varchar("primaryCrop", { length: 120 }),
   farmingExperienceYears: int("farmingExperienceYears"),
   latitude: decimal("latitude", { precision: 10, scale: 7 }),
@@ -290,8 +291,8 @@ async function updateLastSignedIn(userId) {
 async function updateProfile(userId, data) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
-  const values = { userId, displayName: data.displayName, region: data.region, phone: data.phone, state: data.state, district: data.district, pinCode: data.pinCode, village: data.village, primaryCrop: data.primaryCrop, farmingExperienceYears: data.farmingExperienceYears, latitude: data.latitude?.toString(), longitude: data.longitude?.toString() };
-  await db.insert(profiles).values(values).onDuplicateKeyUpdate({ set: { displayName: data.displayName, region: data.region ?? null, phone: data.phone ?? null, state: data.state ?? null, district: data.district ?? null, pinCode: data.pinCode ?? null, village: data.village ?? null, primaryCrop: data.primaryCrop ?? null, farmingExperienceYears: data.farmingExperienceYears ?? null, latitude: data.latitude?.toString() ?? null, longitude: data.longitude?.toString() ?? null } });
+  const values = { userId, displayName: data.displayName, region: data.region, phone: data.phone, state: data.state, district: data.district, pinCode: data.pinCode, village: data.village, town: data.town, primaryCrop: data.primaryCrop, farmingExperienceYears: data.farmingExperienceYears, latitude: data.latitude?.toString(), longitude: data.longitude?.toString() };
+  await db.insert(profiles).values(values).onDuplicateKeyUpdate({ set: { displayName: data.displayName, region: data.region ?? null, phone: data.phone ?? null, state: data.state ?? null, district: data.district ?? null, pinCode: data.pinCode ?? null, village: data.village ?? null, town: data.town ?? null, primaryCrop: data.primaryCrop ?? null, farmingExperienceYears: data.farmingExperienceYears ?? null, latitude: data.latitude?.toString() ?? null, longitude: data.longitude?.toString() ?? null } });
 }
 async function getFarmerSnapshot(ownerId) {
   const db = await getDb();
@@ -1137,12 +1138,12 @@ var appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
-    signup: publicProcedure.input(z2.object({ name: z2.string().trim().min(2).max(160), email: z2.string().trim().toLowerCase().email().max(320), password: z2.string().min(8).max(128), role: z2.enum(["user", "admin"]), phone: z2.string().trim().max(40).optional(), region: z2.string().trim().max(160).optional(), state: z2.string().trim().max(100).optional(), district: z2.string().trim().max(100).optional(), pinCode: z2.string().trim().max(12).optional(), village: z2.string().trim().max(160).optional(), primaryCrop: optionalText(z2.string().trim().min(2).max(120)), farmingExperienceYears: z2.number().int().min(0).max(100).optional(), latitude: z2.number().min(-90).max(90).optional(), longitude: z2.number().min(-180).max(180).optional() })).mutation(async ({ ctx, input }) => {
+    signup: publicProcedure.input(z2.object({ name: z2.string().trim().min(2).max(160), email: z2.string().trim().toLowerCase().email().max(320), password: z2.string().min(8).max(128), role: z2.enum(["user", "admin"]), phone: z2.string().trim().max(40).optional(), region: z2.string().trim().max(160).optional(), state: z2.string().trim().max(100).optional(), district: z2.string().trim().max(100).optional(), pinCode: z2.string().trim().max(12).optional(), village: z2.string().trim().max(160).optional(), town: z2.string().trim().max(160).optional(), primaryCrop: optionalText(z2.string().trim().min(2).max(120)), farmingExperienceYears: z2.number().int().min(0).max(100).optional(), latitude: z2.number().min(-90).max(90).optional(), longitude: z2.number().min(-180).max(180).optional() })).mutation(async ({ ctx, input }) => {
       const email = normalizeLocalEmail(input.email);
       if (await getUserByEmail(email)) throw new Error("An account with this email already exists");
       if (input.role === "admin" && !canCreateLocalAdmin(email, await countAdmins())) throw new Error("Administrator signup is reserved for the configured owner account and only one account is allowed");
       const user = await createLocalUser({ name: input.name.trim(), email, passwordHash: await hashPassword(input.password), role: input.role });
-      await updateProfile(user.id, { displayName: input.name.trim(), phone: input.phone, region: input.region, state: input.state, district: input.district, pinCode: input.pinCode, village: input.village, primaryCrop: input.primaryCrop, farmingExperienceYears: input.farmingExperienceYears, latitude: input.latitude, longitude: input.longitude });
+      await updateProfile(user.id, { displayName: input.name.trim(), phone: input.phone, region: input.region, state: input.state, district: input.district, pinCode: input.pinCode, village: input.village, town: input.town, primaryCrop: input.primaryCrop, farmingExperienceYears: input.farmingExperienceYears, latitude: input.latitude, longitude: input.longitude });
       const token = await createLocalSession(user.openId);
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.cookie(LOCAL_SESSION_COOKIE, token, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1e3 });
@@ -1172,7 +1173,7 @@ var appRouter = router({
     approvedDrugStores: protectedProcedure.query(() => getApprovedDrugStores()),
     createCrop: protectedProcedure.input(z2.object({ name: z2.string().min(2).max(120), cropType: z2.string().min(2).max(80), region: z2.string().max(160).optional() })).mutation(({ ctx, input }) => createCrop({ ownerId: ctx.user.id, ...input })),
     cases: protectedProcedure.query(({ ctx }) => getOwnerCases(ctx.user.id)),
-    updateProfile: protectedProcedure.input(z2.object({ displayName: z2.string().min(2).max(160), region: z2.string().max(160).optional(), phone: z2.string().max(40).optional(), state: z2.string().max(100).optional(), district: z2.string().max(100).optional(), pinCode: z2.string().max(12).optional(), village: z2.string().max(160).optional(), primaryCrop: optionalText(z2.string().trim().min(2).max(120)), farmingExperienceYears: z2.number().int().min(0).max(100).optional(), latitude: z2.number().min(-90).max(90).optional(), longitude: z2.number().min(-180).max(180).optional() })).mutation(({ ctx, input }) => updateProfile(ctx.user.id, input)),
+    updateProfile: protectedProcedure.input(z2.object({ displayName: z2.string().min(2).max(160), region: z2.string().max(160).optional(), phone: z2.string().max(40).optional(), state: z2.string().max(100).optional(), district: z2.string().max(100).optional(), pinCode: z2.string().max(12).optional(), village: z2.string().max(160).optional(), town: z2.string().max(160).optional(), primaryCrop: optionalText(z2.string().trim().min(2).max(120)), farmingExperienceYears: z2.number().int().min(0).max(100).optional(), latitude: z2.number().min(-90).max(90).optional(), longitude: z2.number().min(-180).max(180).optional() })).mutation(({ ctx, input }) => updateProfile(ctx.user.id, input)),
     analyzeScan: protectedProcedure.input(z2.object({ imageBase64: z2.string().min(32).max(12e6), mimeType: z2.string().regex(/^image\/(jpeg|png|webp)$/), cropId: z2.number().int().positive().optional(), fileName: z2.string().min(1).max(180), fieldContext: fieldContextSchema })).mutation(async ({ ctx, input }) => {
       const key = `farmer-${ctx.user.id}/scans/${Date.now()}-${input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
       const buffer = Buffer.from(input.imageBase64.replace(/^data:[^;]+;base64,/, ""), "base64");

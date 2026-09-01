@@ -96,3 +96,11 @@
 - [x] Prevent camera/gallery photo selection from submitting the page or reloading the scan flow.
 - [x] Preserve selected image preview, crop/context fields, and scan-step state after photo selection.
 - [x] Add regression coverage for photo input change handling and rerun the full preview validation loop; live gallery upload verified in docs/PHOTO_PICKER_VERIFICATION.md.
+
+- [x] Fix farmer signup GPS success handling so reverse-geocoded state, district, PIN, village, and town visibly populate the form fields.
+- [x] Ensure signup location state is not lost during asynchronous reverse geocoding or rerendering, and preserve manual fallback fields on failure.
+- [x] Add a deterministic regression test for signup GPS coordinate-to-address field mapping and verify the live signup flow.
+
+- [ ] After the farmer GPS autofill fix passes validation, commit and push the completed CropShield changes to the connected GitHub repository.
+- [x] Keep separate village and town fields in farmer signup/profile and persist both through the managed database.
+- [x] Add regression and live verification evidence for both village and town after GPS success.

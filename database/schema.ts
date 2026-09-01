@@ -25,6 +25,7 @@ export const profiles = mysqlTable("profiles", {
   district: varchar("district", { length: 100 }),
   pinCode: varchar("pinCode", { length: 12 }),
   village: varchar("village", { length: 160 }),
+  town: varchar("town", { length: 160 }),
   primaryCrop: varchar("primaryCrop", { length: 120 }),
   farmingExperienceYears: int("farmingExperienceYears"),
   latitude: decimal("latitude", { precision: 10, scale: 7 }),
