@@ -7,14 +7,13 @@ export default defineConfig({
   root: templateRoot,
   resolve: {
     alias: {
-      "@": path.resolve(templateRoot, "frontend", "src"),
-      "@common": path.resolve(templateRoot, "common"),
+      "@": path.resolve(templateRoot, "client", "src"),
+      "@shared": path.resolve(templateRoot, "shared"),
       "@assets": path.resolve(templateRoot, "attached_assets"),
     },
   },
   test: {
     environment: "node",
-    setupFiles: ["./vitest.setup.ts"],
-    include: ["backend/**/*.test.ts", "backend/**/*.spec.ts", "frontend/**/*.test.ts", "frontend/**/*.spec.ts"],
+    include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
   },
 });
