@@ -4,6 +4,9 @@ import type { TrpcContext } from "./_core/context";
 const mocks = vi.hoisted(() => ({
   insertScan: vi.fn().mockResolvedValue(42),
   updateScan: vi.fn().mockResolvedValue(undefined),
+  getOwnerScans: vi.fn().mockResolvedValue([]),
+  getOwnerCases: vi.fn().mockResolvedValue([]),
+  createCase: vi.fn().mockResolvedValue({ id: 9, scanId: 42, status: "open" }),
   updateProfile: vi.fn().mockResolvedValue(undefined),
   createExpert: vi.fn().mockResolvedValue({ id: 7, status: "pending" }),
   setExpertStatus: vi.fn().mockResolvedValue(undefined),
@@ -16,7 +19,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("./db", async () => {
   const actual = await vi.importActual<typeof import("./db")>("./db");
-  return { ...actual, insertScan: mocks.insertScan, updateScan: mocks.updateScan, updateProfile: mocks.updateProfile, createExpert: mocks.createExpert, setExpertStatus: mocks.setExpertStatus, createDrugStore: mocks.createDrugStore, setDrugStoreStatus: mocks.setDrugStoreStatus };
+  return { ...actual, insertScan: mocks.insertScan, updateScan: mocks.updateScan, getOwnerScans: mocks.getOwnerScans, getOwnerCases: mocks.getOwnerCases, createCase: mocks.createCase, updateProfile: mocks.updateProfile, createExpert: mocks.createExpert, setExpertStatus: mocks.setExpertStatus, createDrugStore: mocks.createDrugStore, setDrugStoreStatus: mocks.setDrugStoreStatus };
 });
 vi.mock("./storage", () => ({ storagePut: mocks.storagePut }));
 vi.mock("./_core/llm", () => ({ invokeLLM: mocks.invokeLLM }));
@@ -47,6 +50,24 @@ describe("CropShield persistence workflows", () => {
     await expect(caller.farmer.analyzeScan({ imageBase64: `data:image/jpeg;base64,${"a".repeat(40)}`, mimeType: "image/jpeg", fileName: "leaf.jpg", fieldContext: undefined })).rejects.toThrow("The scan could not be saved");
     expect(mocks.insertScan).not.toHaveBeenCalled();
     expect(mocks.invokeLLM).not.toHaveBeenCalled();
+  });
+
+  it("returns an analyzed scan through history and its created case", async () => {
+    const { appRouter } = await import("./routers");
+    const persisted = { id: 42, ownerId: 1, status: "analyzing" as string, riskLevel: "unknown" as string };
+    const persistedCase = { id: 9, ownerId: 1, scanId: 42, status: "open" };
+    mocks.insertScan.mockImplementationOnce(async () => { persisted.status = "analyzing"; return persisted.id; });
+    mocks.updateScan.mockImplementationOnce(async (_id, _ownerId, patch) => { Object.assign(persisted, patch); });
+    mocks.createCase.mockImplementationOnce(async () => persistedCase);
+    mocks.getOwnerScans.mockImplementationOnce(async () => [persisted]);
+    mocks.getOwnerCases.mockImplementationOnce(async () => [persistedCase]);
+    const caller = appRouter.createCaller(context("user"));
+    const result = await caller.farmer.analyzeScan({ imageBase64: `data:image/jpeg;base64,${"a".repeat(40)}`, mimeType: "image/jpeg", fileName: "leaf.jpg", fieldContext: undefined });
+    expect(result.disease).toBe("Downy mildew");
+    expect(persisted.status).toBe("complete");
+    await expect(caller.cases.create({ scanId: result.scanId, reference: "CS-000042" })).resolves.toEqual(persistedCase);
+    await expect(caller.farmer.scans()).resolves.toEqual([expect.objectContaining({ id: 42, status: "complete" })]);
+    await expect(caller.farmer.cases()).resolves.toEqual([persistedCase]);
   });
 
   it("persists recommendation progress for the current farmer only", async () => {

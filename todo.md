@@ -57,7 +57,7 @@
 - [ ] Ensure no primary user journey requires consuming every feature on one page; use progressive disclosure and focused task screens throughout.
 
 - [x] Trace why completed scan assessments are not appearing in Scan History and Cases, then fix the persistence and refresh path.
-- [ ] Add regression coverage proving a completed scan is persisted and subsequently returned to farmer history and cases.
+- [x] Add regression coverage proving a completed scan is persisted and subsequently returned to farmer history and cases.
 - [x] Reduce mobile information density across the app with clearer hierarchy, whitespace, progressive disclosure, and focused actions.
 - [x] Shift the visual theme toward calm agriculture-inspired greens, soil neutrals, and warm natural accents while preserving strong readability.
 - [x] Add restrained smooth transitions and respect reduced-motion preferences without distracting animation.
