@@ -101,6 +101,6 @@
 - [x] Ensure signup location state is not lost during asynchronous reverse geocoding or rerendering, and preserve manual fallback fields on failure.
 - [x] Add a deterministic regression test for signup GPS coordinate-to-address field mapping and verify the live signup flow.
 
-- [ ] After the farmer GPS autofill fix passes validation, commit and push the completed CropShield changes to the connected GitHub repository.
+- [x] After the farmer GPS autofill fix passes validation, commit and push the completed CropShield changes to the connected GitHub repository; verified on Zinbas/cropshield-5 main.
 - [x] Keep separate village and town fields in farmer signup/profile and persist both through the managed database.
 - [x] Add regression and live verification evidence for both village and town after GPS success.
