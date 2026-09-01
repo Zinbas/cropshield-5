@@ -13,8 +13,8 @@ describe("local test authentication", () => {
   it("normalizes emails and restricts administrator bootstrap", () => {
     expect(normalizeLocalEmail("  ABHIDEY0822@GMAIL.COM ")).toBe(LOCAL_ADMIN_EMAIL);
     expect(canCreateLocalAdmin(LOCAL_ADMIN_EMAIL, 0)).toBe(true);
-    expect(canCreateLocalAdmin("other@example.com", 0)).toBe(false);
-    expect(canCreateLocalAdmin(LOCAL_ADMIN_EMAIL, 1)).toBe(false);
+    expect(canCreateLocalAdmin("other@example.com", 0)).toBe(true);
+    expect(canCreateLocalAdmin(LOCAL_ADMIN_EMAIL, 1)).toBe(true);
   });
 
   it("never includes a password hash in the safe user projection", () => {

@@ -78,3 +78,17 @@
 - [ ] Expand translations beyond navigation into primary headings, forms, actions, and status/error text.
 - [ ] Add explicit analytics, GPS mapping, and map-coordinate regression tests.
 - [x] Re-run validation and save a fresh checkpoint after this analytics/map/GPS/i18n correction batch.
+
+- [ ] Allow any user to sign up and sign in as administrator for the current testing phase, while keeping the setting easy to restrict later.
+- [ ] Hide farmer-only land and crop profile details from administrator profile views and show role-appropriate admin information instead.
+- [ ] Provide a language selector on the unauthenticated login/signup screen and make the selected language available across all primary app screens, not only navigation.
+- [ ] Fix farmer signup GPS reverse-geocoding so requested address fields visibly populate after location capture.
+- [ ] Provide a farmer Profile map that shows the saved farm’s exact location and supports updating the pin.
+- [ ] Add regression coverage for open admin signup, role-safe profile fields, language control availability, and GPS/map behavior.
+- [ ] Re-run checks, tests, build, health, and responsive previews, then save a milestone checkpoint.
+- [x] Allow any valid local account to sign up and sign in as administrator for the current testing phase.
+- [x] Hide farmer-only region, GPS, address, and exact-farm-map content from administrator Profile views.
+- [x] Provide a language selector on the unauthenticated login/signup screen.
+- [x] Apply signup GPS reverse-geocoded address autofill and retain the farmer Profile exact-location map.
+- [x] Update administrator authentication regression coverage for open testing mode.
+- [x] Run TypeScript, 50-test, production-build, HTTP 200, and mobile-preview validation for this correction batch.

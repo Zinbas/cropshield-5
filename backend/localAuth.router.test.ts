@@ -75,20 +75,14 @@ describe("local auth router", () => {
     expect(mocks.createLocalUser).not.toHaveBeenCalled();
   });
 
-  it("enforces one administrator through the signup router", async () => {
+  it("allows multiple administrator signups in temporary testing mode", async () => {
     mocks.getUserByEmail.mockResolvedValueOnce(undefined);
     mocks.countAdmins.mockResolvedValueOnce(1);
+    mocks.createLocalUser.mockResolvedValueOnce({ ...adminUser, name: "Second Admin", email: "other@example.com" });
     const { appRouter } = await import("./routers");
-    await expect(appRouter.createCaller(context(response().res)).auth.signup({ name: "Owner Admin", email: "abhidey0822@gmail.com", password: "CropTest01!", role: "admin" })).rejects.toThrow("only one account");
-    expect(mocks.createLocalUser).not.toHaveBeenCalled();
-  });
-
-  it("rejects administrator signup for an email other than the configured owner", async () => {
-    mocks.getUserByEmail.mockResolvedValueOnce(undefined);
-    mocks.countAdmins.mockResolvedValueOnce(0);
-    const { appRouter } = await import("./routers");
-    await expect(appRouter.createCaller(context(response().res)).auth.signup({ name: "Other Admin", email: "other@example.com", password: "CropTest01!", role: "admin" })).rejects.toThrow("Administrator signup is reserved");
-    expect(mocks.createLocalUser).not.toHaveBeenCalled();
+    const output = response();
+    const result = await appRouter.createCaller(context(output.res)).auth.signup({ name: "Second Admin", email: "other@example.com", password: "CropTest01!", role: "admin" });
+    expect(result.user.role).toBe("admin");
   });
 
   it("signs in a stored local user and issues a local session", async () => {

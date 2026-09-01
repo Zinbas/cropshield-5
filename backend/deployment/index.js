@@ -184,13 +184,12 @@ function toSafeUser(user) {
 }
 var scrypt = promisify(scryptCallback);
 var LOCAL_SESSION_COOKIE = "cropshield_local_session";
-var LOCAL_ADMIN_EMAIL = "abhidey0822@gmail.com";
 var SESSION_TTL = "7d";
 function normalizeLocalEmail(email) {
   return email.trim().toLowerCase();
 }
-function canCreateLocalAdmin(email, existingLocalAdminCount) {
-  return normalizeLocalEmail(email) === LOCAL_ADMIN_EMAIL && existingLocalAdminCount === 0;
+function canCreateLocalAdmin(_email, _existingLocalAdminCount) {
+  return true;
 }
 function secretKey() {
   const secret = process.env.JWT_SECRET;

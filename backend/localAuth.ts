@@ -19,8 +19,10 @@ export function normalizeLocalEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-export function canCreateLocalAdmin(email: string, existingLocalAdminCount: number) {
-  return normalizeLocalEmail(email) === LOCAL_ADMIN_EMAIL && existingLocalAdminCount === 0;
+export function canCreateLocalAdmin(_email: string, _existingLocalAdminCount: number) {
+  // Temporary testing mode: any valid local account may enter the admin workspace.
+  // Reintroduce owner/count gating before production use.
+  return true;
 }
 
 function secretKey() {
