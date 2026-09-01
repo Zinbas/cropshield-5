@@ -9,11 +9,11 @@ export const SUPPORTED_LANGUAGES = [
 export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number]["code"];
 
 const copy: Record<LanguageCode, Record<string, string>> = {
-  en: { home: "Home", crops: "My Crops", scan: "Scan", cases: "Cases", more: "More", profile: "Profile", experts: "Experts", stores: "Stores", farmers: "Farmers", analytics: "Analytics", save: "Save", back: "Back", language: "Language" },
-  hi: { home: "होम", crops: "मेरी फसलें", scan: "स्कैन", cases: "केस", more: "और", profile: "प्रोफ़ाइल", experts: "विशेषज्ञ", stores: "दुकानें", farmers: "किसान", analytics: "विश्लेषण", save: "सहेजें", back: "वापस", language: "भाषा" },
-  mr: { home: "मुख्यपृष्ठ", crops: "माझी पिके", scan: "स्कॅन", cases: "प्रकरणे", more: "अधिक", profile: "प्रोफाइल", experts: "तज्ज्ञ", stores: "दुकाने", farmers: "शेतकरी", analytics: "विश्लेषण", save: "जतन करा", back: "मागे", language: "भाषा" },
-  as: { home: "হোম", crops: "মোৰ শস্য", scan: "স্কেন", cases: "কেছ", more: "অধিক", profile: "প্ৰফাইল", experts: "বিশেষজ্ঞ", stores: "দোকান", farmers: "কৃষক", analytics: "বিশ্লেষণ", save: "সংৰক্ষণ", back: "উভতি যাওক", language: "ভাষা" },
-  bn: { home: "হোম", crops: "আমার ফসল", scan: "স্ক্যান", cases: "কেস", more: "আরও", profile: "প্রোফাইল", experts: "বিশেষজ্ঞ", stores: "দোকান", farmers: "কৃষক", analytics: "বিশ্লেষণ", save: "সংরক্ষণ", back: "পিছনে", language: "ভাষা" },
+  en: { home: "Home", crops: "My Crops", scan: "Scan", cases: "Cases", more: "More", profile: "Profile", experts: "Experts", stores: "Stores", farmers: "Farmers", analytics: "Analytics", save: "Save", back: "Back", language: "Language", welcome: "Who are you signing in as?", signIn: "Sign in to CropShield", create: "Create account" },
+  hi: { home: "होम", crops: "मेरी फसलें", scan: "स्कैन", cases: "केस", more: "और", profile: "प्रोफ़ाइल", experts: "विशेषज्ञ", stores: "दुकानें", farmers: "किसान", analytics: "विश्लेषण", save: "सहेजें", back: "वापस", language: "भाषा", welcome: "आप किस रूप में साइन इन कर रहे हैं?", signIn: "CropShield में साइन इन करें", create: "खाता बनाएं" },
+  mr: { home: "मुख्यपृष्ठ", crops: "माझी पिके", scan: "स्कॅन", cases: "प्रकरणे", more: "अधिक", profile: "प्रोफाइल", experts: "तज्ज्ञ", stores: "दुकाने", farmers: "शेतकरी", analytics: "विश्लेषण", save: "जतन करा", back: "मागे", language: "भाषा", welcome: "तुम्ही कोण म्हणून साइन इन करत आहात?", signIn: "CropShield मध्ये साइन इन करा", create: "खाते तयार करा" },
+  as: { home: "হোম", crops: "মোৰ শস্য", scan: "স্কেন", cases: "কেছ", more: "অধিক", profile: "প্ৰফাইল", experts: "বিশেষজ্ঞ", stores: "দোকান", farmers: "কৃষক", analytics: "বিশ্লেষণ", save: "সংৰক্ষণ", back: "উভতি যাওক", language: "ভাষা", welcome: "আপুনি কোন হিচাপে ছাইন ইন কৰিছে?", signIn: "CropShield-ত ছাইন ইন কৰক", create: "একাউণ্ট সৃষ্টি কৰক" },
+  bn: { home: "হোম", crops: "আমার ফসল", scan: "স্ক্যান", cases: "কেস", more: "আরও", profile: "প্রোফাইল", experts: "বিশেষজ্ঞ", stores: "দোকান", farmers: "কৃষক", analytics: "বিশ্লেষণ", save: "সংরক্ষণ", back: "পিছনে", language: "ভাষা", welcome: "আপনি কী হিসেবে সাইন ইন করছেন?", signIn: "CropShield-এ সাইন ইন করুন", create: "অ্যাকাউন্ট তৈরি করুন" },
 };
 
 export function getStoredLanguage(): LanguageCode {
