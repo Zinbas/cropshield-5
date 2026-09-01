@@ -31,10 +31,18 @@ describe("CropShield persistence workflows", () => {
   it("persists a scan with the selected crop link and structured diagnosis", async () => {
     const { appRouter } = await import("./routers");
     const caller = appRouter.createCaller(context("user"));
-    const result = await caller.farmer.analyzeScan({ imageBase64: `data:image/jpeg;base64,${"a".repeat(40)}`, mimeType: "image/jpeg", fileName: "leaf.jpg", cropId: 10 });
-    expect(mocks.insertScan).toHaveBeenCalledWith(expect.objectContaining({ ownerId: 1, cropId: 10, status: "analyzing" }));
-    expect(mocks.updateScan).toHaveBeenCalledWith(42, 1, expect.objectContaining({ status: "complete", disease: "Downy mildew", riskLevel: "high" }));
+    const result = await caller.farmer.analyzeScan({ imageBase64: `data:image/jpeg;base64,${"a".repeat(40)}`, mimeType: "image/jpeg", fileName: "leaf.jpg", cropId: 10, fieldContext: { soilType: "Sandy loam", soilPh: 6.4, soilMoisture: "balanced", cropCount: 120, landArea: 2.5, landUnit: "acres", fieldNotes: "Spots appeared after rainfall" } });
+    expect(mocks.insertScan).toHaveBeenCalledWith(expect.objectContaining({ ownerId: 1, cropId: 10, status: "analyzing", soilType: "Sandy loam", soilPh: "6.4", cropCount: 120, landArea: "2.5", landUnit: "acres", fieldNotes: "Spots appeared after rainfall" }));
+    expect(mocks.updateScan).toHaveBeenCalledWith(42, 1, expect.objectContaining({ status: "complete", disease: "Downy mildew", riskLevel: "high", recommendationProgress: JSON.stringify([{ step: "Consult an expert", completed: false }]) }));
     expect(result.disease).toBe("Downy mildew");
+    expect(result.fieldContext).toMatchObject({ soilType: "Sandy loam", landArea: 2.5 });
+  });
+
+  it("persists recommendation progress for the current farmer only", async () => {
+    const { appRouter } = await import("./routers");
+    const caller = appRouter.createCaller(context("user"));
+    await expect(caller.farmer.updateRecommendationProgress({ scanId: 42, progress: [{ step: "Inspect the leaves", completed: true }] })).resolves.toEqual({ success: true });
+    expect(mocks.updateScan).toHaveBeenCalledWith(42, 1, { recommendationProgress: JSON.stringify([{ step: "Inspect the leaves", completed: true }]) });
   });
 
   it("persists GPS/manual profile fields through the protected mutation", async () => {
